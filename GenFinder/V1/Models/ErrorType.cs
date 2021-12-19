@@ -4,6 +4,7 @@
     {
         Ok = 0,
         NotSupportedGen = 1,
-        NonExistingGen = 2
+        NonExistingGen = 2,
+        NotProvidedGenParam = 3
     }
 }

@@ -5,6 +5,6 @@ namespace GenFinder.V1.Interfaces
 {
     public interface IGenFinderApi
     {
-        public Task<FindGenResponse> FindGene(string gen);
+        public Task<FindGenResponse> FindGen(string gen);
     }
 }

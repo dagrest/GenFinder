@@ -26,19 +26,24 @@ namespace GenFinderTests
             "AAAAAAAAAAAGCTTCGCGGGGGGCGTTCCCGGGGTTTTG"
         };
 
+        private const string FileName = "TestInputFile";
+        private string _path;
+
         [OneTimeSetUp]
         public virtual void SetUp()
         {
+            var workingDirectory = Directory.GetCurrentDirectory();
+            var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+            _path = projectDirectory + "\\..\\" + FileName + ".dat";
         }
 
-        [TestCase("TestInputFile", 2048, 20)]
+        [TestCase(FileName, 2048, 20)]
         //[TestCase("TestInputFile", 1024, 10)]
         public void Generate_Test_DnaFile(string fileName, int chunkSize, int chunksNumber)
         {
-            string path = AppDomain.CurrentDomain.BaseDirectory + fileName + ".dat";
-            File.Delete(path);
+            File.Delete(_path);
             var usedGenesList = new List<string>();
-            using (StreamWriter sr = File.AppendText(path))
+            using (StreamWriter sr = File.AppendText(_path))
             {
                 for (var i = 0; i < chunksNumber; i++)
                 {
@@ -70,7 +75,7 @@ namespace GenFinderTests
                 sr.Close();
             }
 
-            var fileContent = File.ReadAllText(path);
+            var fileContent = File.ReadAllText(_path);
 
             foreach (var genFromList in usedGenesList)
             {
