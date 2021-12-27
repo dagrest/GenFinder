@@ -24,7 +24,7 @@ namespace GenFinder.V1.ApiImplementation
             _dal = dal;
             var workingDirectory = Directory.GetCurrentDirectory();
             var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
-            _path = projectDirectory + "\\..\\" + FileName + ".dat";
+            _path = projectDirectory + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + FileName + ".dat";
         }
 
     public Task<FindGenResponse> FindGen(string gen)
@@ -37,6 +37,7 @@ namespace GenFinder.V1.ApiImplementation
             // Find all appearances of gen prefix in file and save indexes in map
             if(!_dal.IsInitialized()) InitPrefixIndexList(1024);
 
+            Console.WriteLine("FindGen started...");
             // Find gen in file
             return Task.FromResult(FindGenInFile(gen) ? 
                 new FindGenResponse { ErrorStatus = new ErrorStatus { ErrorType = ErrorType.Ok } } : 
@@ -50,46 +51,61 @@ namespace GenFinder.V1.ApiImplementation
 
         private bool InitPrefixIndexList(int chunkSize)
         {
+            Console.WriteLine("InitPrefixIndexList started...");
             var fileOffset = 0L;
 
             var supportedIndexesList = SupportedGenLetters.Select(c => SupportedGenPrefix + c).ToList();
 
-            using (var mmf = MemoryMappedFile.CreateFromFile(_path, FileMode.Open, "GenInitImage"))
+            Console.WriteLine("InitPrefixIndexList path: " + _path);
+            try
             {
-                FileInfo fileInfo = new FileInfo(_path);
-                while (fileOffset + chunkSize < fileInfo.Length)
+                using (var mmf = MemoryMappedFile.CreateFromFile(_path, FileMode.Open, null))
                 {
-                    // Create a random access view
-                    using (var accessor = mmf.CreateViewAccessor(fileOffset, chunkSize))
+                    FileInfo fileInfo = new FileInfo(_path);
+                    while (fileOffset + chunkSize < fileInfo.Length)
                     {
-                        var myGenString = ReadChunkAsString(accessor, chunkSize);
-
-                        foreach (var supportedIndex in supportedIndexesList)
+                        Console.WriteLine("file offset: " + fileOffset + chunkSize);
+                        // Create a random access view
+                        using (var accessor = mmf.CreateViewAccessor(fileOffset, chunkSize))
                         {
-                            if (!myGenString.Contains(supportedIndex)) continue;
-                            var indexOffset = 0;
-                            while (indexOffset >= 0)
-                            {
-                                indexOffset = myGenString.IndexOf(supportedIndex, indexOffset,
-                                    chunkSize - indexOffset, StringComparison.CurrentCulture);
-                                if (indexOffset >= 0)
-                                {
-                                    // AddPrefixIndex
-                                    _dal.AddGenPrefixIndex(supportedIndex, fileOffset + indexOffset);
-                                }
-                                else
-                                {
-                                    continue;
-                                }
+                            var myGenString = ReadChunkAsString(accessor, chunkSize);
+                            Console.WriteLine("myGenString: " + myGenString);
 
-                                indexOffset += supportedIndex.Length;
+                            foreach (var supportedIndex in supportedIndexesList)
+                            {
+                                if (!myGenString.Contains(supportedIndex)) continue;
+                                var indexOffset = 0;
+                                while (indexOffset >= 0)
+                                {
+                                    indexOffset = myGenString.IndexOf(supportedIndex, indexOffset,
+                                        chunkSize - indexOffset, StringComparison.CurrentCulture);
+                                    Console.WriteLine("indexOffset: " + indexOffset);
+                                    if (indexOffset >= 0)
+                                    {
+                                        // AddPrefixIndex
+                                        _dal.AddGenPrefixIndex(supportedIndex, fileOffset + indexOffset);
+                                    }
+                                    else
+                                    {
+                                        continue;
+                                    }
+
+                                    indexOffset += supportedIndex.Length;
+                                }
                             }
                         }
-                    }
-                    fileOffset += chunkSize;
-                }
 
+                        fileOffset += chunkSize;
+                    }
+
+                }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: " + e.Message + " " + e.StackTrace);
+            }
+
+            Console.WriteLine("InitPrefixIndexList finished...");
             return false;
         }
 
@@ -98,7 +114,7 @@ namespace GenFinder.V1.ApiImplementation
             var genPrefixIndexList = _dal.GetGenPrefixIndexList(GetPrefixX(gen));
             if (genPrefixIndexList == null) return false;
 
-            using (var mmf = MemoryMappedFile.CreateFromFile(_path, FileMode.Open, "GenFindImage"))
+            using (var mmf = MemoryMappedFile.CreateFromFile(_path, FileMode.Open, null))
             {
                 foreach (var genPrefixIndex in genPrefixIndexList)
                 {

@@ -1,4 +1,6 @@
-﻿using Carter;
+﻿using System;
+using System.IO;
+using Carter;
 using Carter.Request;
 using Carter.Response;
 using GenFinder.V1.Interfaces;
@@ -13,6 +15,7 @@ namespace GenFinder.V1
             // TODO: Add input parameter validation here 
             Get("/v1/genes/find/", async (req, res) =>
             {
+                Console.WriteLine("Called /v1/genes/find/");
                 var response = await genFinderApi.FindGen(req.Query.As<string>("gen"));
                 switch (response.ErrorStatus.ErrorType)
                 {
@@ -31,6 +34,16 @@ namespace GenFinder.V1
                         break;
                 }
                 await res.AsJson(response);
+            });
+
+            Get("/v1/isAlive/", async (req, res) =>
+            {
+                Console.WriteLine("Called /v1/isAlive/");
+                var FileName = "TestInputFile";
+                var workingDirectory = Directory.GetCurrentDirectory();
+                var projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+                var path = projectDirectory + Path.DirectorySeparatorChar + ".." + Path.DirectorySeparatorChar + FileName + ".dat";
+                await res.AsJson("Alive: " + path);
             });
         }
     }
