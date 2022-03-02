@@ -14,4 +14,5 @@ RUN dotnet build
 
 WORKDIR /usr/GenFinder/GenFinder/bin/Debug/net5.0
 
+#Entrypoint
 ENTRYPOINT ["dotnet","GenFinder.dll"]
